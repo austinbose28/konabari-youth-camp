@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="bn">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Camp Admin | Konabari Youth Camp</title>
+<style>
+:root{color-scheme:light;--ink:#17251e;--muted:#66736c;--green:#176b45;--line:#e4eae6;--paper:#f5f8f6}
+*{box-sizing:border-box}body{margin:0;background:var(--paper);font:15px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif;color:var(--ink)}
+header{background:#fff;border-bottom:1px solid var(--line);padding:18px max(20px,calc((100vw - 1120px)/2));display:flex;align-items:center;justify-content:space-between}
+.brand{font-weight:750;font-size:18px}.brand span{color:var(--green)}button{border:0;border-radius:9px;background:var(--green);color:#fff;padding:11px 16px;font-weight:650;cursor:pointer}button.secondary{background:#edf3ef;color:var(--ink)}button:disabled{opacity:.55;cursor:wait}
+main{max-width:1120px;margin:40px auto;padding:0 20px}.intro{margin-bottom:22px}.intro h1{margin:0 0 4px;font-size:28px}.intro p,.muted{color:var(--muted);margin:0}
+.card{background:#fff;border:1px solid var(--line);border-radius:16px;padding:24px;box-shadow:0 8px 30px #143d2510}
+#login{max-width:430px;margin:50px auto}label{display:block;font-weight:650;margin:14px 0 6px}input{width:100%;padding:12px;border:1px solid #cfd9d2;border-radius:9px;font:inherit}#login button{width:100%;margin-top:18px}
+.notice{margin-top:14px;color:#9c3e2d}.topline{display:flex;gap:12px;align-items:center;justify-content:space-between;margin-bottom:18px}.stats{display:flex;gap:10px;flex-wrap:wrap}.pill{background:#edf5ef;color:#24583b;padding:8px 12px;border-radius:99px;font-weight:650}
+.tablewrap{overflow:auto;border:1px solid var(--line);border-radius:12px}table{border-collapse:collapse;width:100%;min-width:820px}th,td{text-align:left;padding:13px 14px;border-bottom:1px solid var(--line);vertical-align:top}th{background:#f7faf8;color:#4c5c53;font-size:13px}tr:last-child td{border-bottom:0}.status{font-weight:700}.paid{color:#167447}.pending{color:#a35b14}.empty{text-align:center;padding:30px;color:var(--muted)}
+[hidden]{display:none!important}
+</style>
+</head>
+<body>
+<header><div class="brand">Konabari Youth Camp <span>• Admin</span></div><button id="logout" class="secondary" hidden>লগআউট</button></header>
+<main>
+<section id="login" class="card">
+<h1>Organizer Login</h1><p class="muted">অনুমোদিত organizer email দিয়ে প্রবেশ করুন।</p>
+<form id="loginForm"><label for="email">Email</label><input id="email" type="email" autocomplete="username" required><label for="password">Password</label><input id="password" type="password" autocomplete="current-password" required><button id="loginBtn">Login</button></form>
+<p id="loginMsg" class="notice" role="status"></p>
+</section>
+<section id="dashboard" hidden>
+<div class="intro"><h1>Registration Dashboard</h1><p>নিবন্ধন ও payment status দেখুন।</p></div>
+<div class="card">
+<div class="topline"><div class="stats"><span class="pill" id="count">মোট: 0</span><span class="pill" id="paidCount">Paid: 0</span></div><button id="refresh" class="secondary">Refresh</button></div>
+<div id="message" class="muted" role="status"></div>
+<div class="tablewrap"><table><thead><tr><th>Receipt</th><th>নাম</th><th>মোবাইল</th><th>চার্চ</th><th>জরুরি যোগাযোগ</th><th>প্যাকেজ</th><th>ফি</th><th>Payment</th><th>তারিখ</th></tr></thead><tbody id="rows"></tbody></table></div>
+</div>
+</section>
+</main>
+<script type="module">
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+const supabase = createClient('https://txewoknzeeamwpreaeqg.supabase.co','sb_publishable_fekQb_Tk0TxWKMZjl6ifpg_n1Qi_5-u');
+const login=document.querySelector('#login'), dashboard=document.querySelector('#dashboard'), msg=document.querySelector('#message');
+const allowed='austinbose28@gmail.com';
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+function setSignedIn(user){const ok=!!user&&user.email?.toLowerCase()===allowed&&user.app_metadata?.role==='admin';login.hidden=ok;dashboard.hidden=!ok;document.querySelector('#logout').hidden=!user;if(user&&!ok){document.querySelector('#loginMsg').textContent='এই account-এর admin access নেই।';supabase.auth.signOut()}if(ok)loadRows()}
+async function loadRows(){msg.textContent='তথ্য আনা হচ্ছে…';const {data,error}=await supabase.from('camp_registrations').select('receipt_code,full_name,phone,church_name,emergency_phone,package_type,amount_bdt,payment_status,created_at').order('created_at',{ascending:false});if(error){msg.textContent='তথ্য লোড হয়নি: '+error.message;return}msg.textContent='';const rows=document.querySelector('#rows');rows.innerHTML='';document.querySelector('#count').textContent='মোট: '+data.length;document.querySelector('#paidCount').textContent='Paid: '+data.filter(r=>r.payment_status==='paid').length;if(!data.length){rows.innerHTML='<tr><td colspan="9" class="empty">এখনো কোনো registration নেই।</td></tr>';return}for(const r of data){const tr=document.createElement('tr');const date=r.created_at?new Date(r.created_at).toLocaleString('bn-BD'):'—';tr.innerHTML='<td>'+esc(r.receipt_code)+'</td><td>'+esc(r.full_name)+'</td><td>'+esc(r.phone)+'</td><td>'+esc(r.church_name)+'</td><td>'+esc(r.emergency_phone)+'</td><td>'+esc(r.package_type)+'</td><td>৳'+esc(r.amount_bdt)+'</td><td class="status '+(r.payment_status==='paid'?'paid':'pending')+'">'+esc(r.payment_status)+'</td><td>'+esc(date)+'</td>';rows.append(tr)}}
+document.querySelector('#loginForm').addEventListener('submit',async e=>{e.preventDefault();const b=document.querySelector('#loginBtn');b.disabled=true;document.querySelector('#loginMsg').textContent='';const {data,error}=await supabase.auth.signInWithPassword({email:document.querySelector('#email').value,password:document.querySelector('#password').value});b.disabled=false;if(error){document.querySelector('#loginMsg').textContent='Login হয়নি। Email/password যাচাই করুন.';return}setSignedIn(data.user)});
+document.querySelector('#logout').addEventListener('click',()=>supabase.auth.signOut());
+document.querySelector('#refresh').addEventListener('click',loadRows);
+supabase.auth.onAuthStateChange((_event,session)=>setSignedIn(session?.user??null));
+const {data:{session}}=await supabase.auth.getSession();setSignedIn(session?.user??null);
+</script>
+</body></html>
