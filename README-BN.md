@@ -1,23 +1,25 @@
-# Konabari Youth Camp Registration — 2026
+# Konabari Youth Camp Registration
 
-## Included
-- `index.html`: Complete responsive website preview.
-- Package choices: **Camp + BBQ — ৳200** and **Only Camp — ৳100**.
-- Registration form fields: name, phone, church, emergency contact.
-- Demo registration receipt with print/copy actions.
+Live registration site: https://austinbose28.github.io/konabari-youth-camp/
 
-## Run locally
-1. Extract this ZIP.
-2. Open `index.html` in Chrome or Edge.
+## Registration
+- Camp + BBQ: ৳200
+- Only Camp: ৳100
+- The form collects name, phone, church, and emergency contact.
+- ZiniPay checkout is connected through Supabase Edge Functions.
+- Registrations are stored in the Supabase `camp_registrations` table.
+- Payment status is marked paid only after the server verifies the invoice, amount, completion status, and transaction ID with ZiniPay.
 
-## Important: before accepting real donations/payments
-This is the complete **front-end preview**, not a production payment system. The form currently does not store registrations in a database and does not initiate a real ZiniPay payment. The displayed receipt is marked as demo and must not be treated as payment confirmation.
+## Organizer dashboard
+Open https://austinbose28.github.io/konabari-youth-camp/admin.html
 
-For a live deployment, connect:
-1. Supabase database and Row Level Security policies.
-2. A Supabase Edge Function to create payment sessions on the server.
-3. ZiniPay's official API credentials stored as server-side secrets (never in `index.html`).
-4. A server-side callback/webhook that verifies payment status before marking a receipt as paid.
-5. An authenticated admin dashboard with admin-only permissions.
+Dashboard login uses Supabase Auth. Read access is restricted by Row Level Security to the authorized organizer email and the `admin` app metadata role. The organizer Auth account still needs to be created and assigned that role before dashboard data can be viewed.
 
-You will need the exact ZiniPay merchant/API documentation and credentials to complete the live checkout securely.
+## Services
+- GitHub Pages serves the site.
+- Supabase project: `txewoknzeeamwpreaeqg`
+- Edge Functions: `create-camp-payment` and `verify-camp-payment`
+- ZiniPay API key is held as a server-side Supabase Function secret; it is not embedded in the public site.
+
+## Payment readiness
+The integration and server functions are deployed. No real payment has been made during setup, so do a controlled low-value live checkout before relying on it for registrations. Confirm the return flow and paid status in the dashboard after the organizer account is enabled.
